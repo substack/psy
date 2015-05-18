@@ -51,7 +51,7 @@ mkdirp.sync(path.dirname(sockfile))
 if (cmd === 'start') {
   var name = defined(argv.name, randomBytes(4).toString('hex'))
   var opts = {
-    cwd: argv.cwd,
+    cwd: defined(argv.cwd, process.cwd()),
     env: argv.env,
     maxRestarts: defined(argv.maxRestarts, -1),
     sleep: defined(argv.sleep, 0),
@@ -226,7 +226,7 @@ function start (opts, cb) {
         linestate[name] = true
         extra[name] = { logfile: opts.logfile }
       }
-      if (!group.get(name)) group.add(name, command)
+      if (!group.get(name)) group.add(name, command, opts)
       group.start(name, opts)
       if (cb && typeof cb === 'function') cb()
     },
