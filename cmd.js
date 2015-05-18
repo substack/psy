@@ -41,9 +41,9 @@ if (cmd === 'start') {
   var name = defined(argv.name, argv._.shift())
   getGroup(function (err, group) {
     if (err) return error(err)
-    group.add(name, argv._.slice(1))
-    group.start(name)
-    group.disconnect()
+    group.start(name, argv._slice.slice(1), function () {
+      group.disconnect()
+    })
   })
 } else if (cmd === 'stop') {
   var name = defined(argv.name, argv._[1])
@@ -84,14 +84,15 @@ if (cmd === 'start') {
     })
   })
 } else if (cmd === 'server') {
-  connect(function (err, r) {
-    if (r) return error(new Error('server already running'))
-    fs.unlink(sockfile, function () {
-      start(function (err) {
-        if (err) error(err)
-      })
-    })
+  fs.stat(sockfile, function (err) {
+    if (!err) fs.unlink(sockfile, fstart)
+    else fstart()
   })
+  function fstart (err) {
+    start(function (err) {
+      if (err) error(err)
+    })
+  }
 } else if (cmd === 'daemon') {
   daemon()
 } else usage(1)
@@ -105,26 +106,50 @@ function usage (code) {
 function start (cb) {
   cb = once(cb)
   var group = respawn()
-
-  var glist = group.list
-  group.list = function (fn) { fn(glist.call(group)) }
-
-  var gremove = group.remove
-  group.remove = function (fn) {
-    gremove.apply(group, arguments)
-    fn()
+  var iface = {
+    list: function (cb) {
+      if (typeof cb === 'function') cb(group.list())
+    },
+    start: function (name, command, cb) {
+      group.add(name, command)
+      group.start(name)
+      if (cb && typeof cb === 'function') cb()
+    },
+    stop: function (name, cb) {
+      group.stop(name, cb)
+    },
+    restart: function (name, cb) {
+      group.restart(name)
+      if (cb && typeof cb === 'function') cb()
+    },
+    remove: function (name, cb) {
+      group.remove(name)
+      if (cb && typeof cb === 'function') cb()
+    },
+    kill: function () {
+      server.close()
+      process.exit()
+    },
+    close: function (cb) {
+      server.close()
+      if (cb && typeof cb === 'function') cb()
+    }
   }
-  group.close = function () { server.close() }
-  group.kill = function () { process.exit() }
 
   var server = net.createServer(function (stream) {
-    stream.pipe(rpc(group)).pipe(stream)
+    stream.on('error', function () {})
+    stream.pipe(rpc(iface)).pipe(stream)
   })
   server.listen(sockfile, function () {
     cb(null, group)
     if (argv.parentpid) process.kill(argv.parentpid, 'SIGUSR2')
   })
   server.once('error', cb)
+
+  process.once('exit', function () {
+    fs.unlinkSync(pidfile)
+    fs.unlinkSync(sockfile)
+  })
 }
 
 function daemon (cb) {
@@ -153,14 +178,33 @@ function daemon (cb) {
   })
 }
 
-function connect (cb) {
-  cb = once(cb)
+function connect (cb_) {
+  cb = once(function (err, r) {
+    process.nextTick(function () {
+      process.removeListener('uncaughtException', onuncaught)
+    })
+    cb_(err, r)
+  })
+  process.once('uncaughtException', onuncaught)
+  function onuncaught (err) {
+    // needed because some core bug with unix sockets
+    if (err && err.code === 'ECONNREFUSED') {}
+    else {
+      console.error(err.stack || err)
+      process.exit(1)
+    }
+  }
   var c = net.connect(sockfile)
+  var client = rpc()
+  c.pause()
+ 
+  var r = client.wrap(METHODS)
+  r.disconnect = function () { c.destroy() }
   c.once('connect', function () {
-    var client = rpc()
-    cb(null, client.wrap(METHODS))
+    cb(null, r)
   })
   c.once('error', cb)
+  c.pipe(client).pipe(c)
 }
 
 function getGroup (cb) {
