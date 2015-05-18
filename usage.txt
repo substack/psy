@@ -43,6 +43,10 @@ psy ls
 
   --json     Print the data as json instead of text columns.
 
+psy log NAME
+
+  Show the lifecycle events and stdout+stderr for NAME as it arrives.
+
 psy server
 
   Run the monitor service in the foreground.

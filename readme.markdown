@@ -59,6 +59,30 @@ $ psy ls
 api  stopped  ---  ---  node server.js
 ```
 
+log lifecycle events and stdout+stderr:
+
+```
+$ psy log msgs
+!!! PROCESS SPAWN: PID 12086
+!!! PROCESS START
+2015-05-18T14:09:26.886Z
+/home/substack/projects/psy/msgs.js:3
+    if (Math.random() < 0.2) (undefined).whatever()
+                                        ^
+TypeError: Cannot read property 'whatever' of undefined
+    at null._repeat (/home/substack/projects/psy/msgs.js:3:41)
+    at wrapper [as _onTimeout] (timers.js:267:19)
+    at Timer.listOnTimeout (timers.js:89:15)
+!!! PROCESS EXIT: 1
+!!! PROCESS SLEEP
+!!! PROCESS SPAWN: PID 12092
+2015-05-18T14:09:29.264Z
+2015-05-18T14:09:30.303Z
+2015-05-18T14:09:31.314Z
+!!! PROCESS EXIT: SIGTERM
+!!! PROCESS STOP
+```
+
 and SEVERAL more!
 
 # usage
@@ -108,6 +132,10 @@ psy ls
   List the running processes as text columns.
 
   --json     Print the data as json instead of text columns.
+
+psy log NAME
+
+  Show the lifecycle events and stdout+stderr for NAME as it arrives.
 
 psy server
 

@@ -18,6 +18,7 @@ var once = require('once')
 var timeago = require('timeago')
 var table = require('text-table')
 var sprintf = require('sprintf')
+var through = require('through2')
 
 var rpc = require('rpc-stream')
 var respawn = require('respawn-group')
@@ -26,7 +27,9 @@ var spawn = require('child_process').spawn
 var randomBytes = require('crypto').randomBytes
 
 var HOME = defined(process.env.HOME, process.env.USERDIR)
-var METHODS = [ 'start', 'stop', 'restart', 'remove', 'list', 'close', 'kill' ]
+var METHODS = [
+  'start', 'stop', 'restart', 'remove', 'list', 'close', 'kill', 'log'
+]
 
 var mkdirp = require('mkdirp')
 var sockfile = defined(
@@ -91,6 +94,14 @@ if (cmd === 'start') {
     group.list(function (items) {
       process.stdout.write(formatList(items))
       group.disconnect()
+    })
+  })
+} else if (cmd === 'log') {
+  var name = defined(argv.name, argv._[1])
+  getGroup(function (err, group) {
+    if (err) return error(err)
+    group.log(name, function () {
+      //group.disconnect()
     })
   })
 } else if (cmd === 'server') {
@@ -240,16 +251,35 @@ function start (opts, cb) {
     connected ++
     var isconnected = true
     stream.on('error', function () {})
-    stream.pipe(rpc(iface)).pipe(stream)
- 
+
+    iface.log = function (name, cb) {
+      if (!has(logging, name)) {
+        logging[name] = []
+        linestate[name] = true
+      }
+      var log = through(function (buf, enc, next) {
+        client.write(buf.toString('base64'))
+        next()
+      })
+      logging[name].push(log)
+
+      stream.once('_cleanup', function () {
+        var ix = logging[name].indexOf(log)
+        if (ix >= 0) logging[name].splice(ix, 1)
+      })
+    }
+    var rstream = rpc(iface)
+    var client = rstream.wrap(['write'])
+    stream.pipe(rstream).pipe(stream)
+
     stream.once('end', onend)
     stream.once('error', onend)
     stream.once('close', onend)
- 
     function onend () {
       if (!isconnected) return
       isconnected = false
       connected -= 1
+      stream.emit('_cleanup')
 
       if (opts.autoclose === false) return
       if (connected === 0 && group.list().length === 0) {
@@ -325,7 +355,11 @@ function connect (cb_) {
     }
   }
   var c = net.connect(sockfile)
-  var client = rpc()
+  var client = rpc({
+    write: function (buf) {
+      process.stdout.write(Buffer(buf, 'base64'))
+    }
+  })
   c.pause()
  
   var r = client.wrap(METHODS)
