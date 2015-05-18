@@ -59,8 +59,9 @@ if (cmd === 'start') {
   }
   getGroup(function (err, group) {
     if (err) return error(err)
-    group.start(name, argv._.slice(1), opts, function () {
-      if (!argv.name) console.log(name)
+    group.start(name, argv._.slice(1), opts, function (err) {
+      if (err) console.error(err)
+      else if (!argv.name) console.log(name)
       group.disconnect()
     })
   })
@@ -77,22 +78,26 @@ if (cmd === 'start') {
   var name = defined(argv.name, argv._[1])
   getGroup(function (err, group) {
     if (err) return error(err)
-    group.restart(name)
-    group.disconnect()
+    group.restart(name, function (err) {
+      if (err) console.error(err)
+      group.disconnect()
+    })
   })
 } else if (cmd === 'rm' || cmd === 'remove') {
   var name = defined(argv.name, argv._[1])
   getGroup(function (err, group) {
     if (err) return error(err)
-    group.remove(name, function () {
+    group.remove(name, function (err) {
+      if (err) console.error(err)
       group.disconnect()
     })
   })
 } else if (cmd === 'list' || cmd === 'ls') {
   getGroup(function (err, group) {
     if (err) return error(err)
-    group.list(function (items) {
-      process.stdout.write(formatList(items))
+    group.list(function (err, items) {
+      if (err) console.error(err)
+      else process.stdout.write(formatList(items))
       group.disconnect()
     })
   })
@@ -100,7 +105,8 @@ if (cmd === 'start') {
   var name = defined(argv.name, argv._[1])
   getGroup(function (err, group) {
     if (err) return error(err)
-    group.log(name, function () {
+    group.log(name, function (err) {
+      if (err) console.error(err)
       //group.disconnect()
     })
   })
@@ -198,11 +204,13 @@ function start (opts, cb) {
         delete ref.child
         delete ref._events
         delete ref._eventsCount
+        delete ref._maxListeners
+        delete ref.timeout
 
         if (has(extra, item.id)) return xtend(ref, extra[item.id])
         else return ref
       })
-      if (typeof cb === 'function') cb(items)
+      if (typeof cb === 'function') cb(null, items)
     },
     start: function (name, command, opts, cb) {
       if (typeof opts === 'function') {
