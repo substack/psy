@@ -1,10 +1,44 @@
-respawn start NAME COMMAND...
+psy start {OPTIONS} -- [COMMAND...]
 
-respawn stop NAME
+  Start a process COMMAND.
 
-respawn restart NAME
+   --name NAME  Give the process a name.
+                Otherwise the name is a random hex string.
 
-respawn rm NAME
+   If NAME isn't given, the generated hex name will be printed.
 
-respawn list
+psy stop NAME
 
+  Stop a process by its NAME.
+
+psy restart NAME
+
+  Restart a process by its NAME.
+
+psy rm NAME
+psy remove NAME
+
+  Stop a process and remove it from the list.
+
+psy list
+psy ls
+
+  List the running processes as text columns.
+
+  --json     Print the data as json instead of text columns.
+
+psy server
+
+  Run the monitor service in the foreground.
+
+psy daemon
+
+  Run the monitor in the background.
+
+psy pid
+
+  Print the last known PID of the daemon process.
+
+If the service isn't running when a command like `psy start` or `psy ls` is run,
+the service will be opened in autoclose mode. In autoclose mode, the service
+automatically exits when there are no open connections and no managed processes.

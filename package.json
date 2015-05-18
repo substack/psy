@@ -1,8 +1,10 @@
 {
-  "name": "respawn-command",
+  "name": "psy",
   "version": "1.0.0",
-  "description": "respawn command for managing processes with respawn-group",
-  "main": "cmd.js",
+  "description": "process monitor command",
+  "bin": {
+    "psy": "cmd.js"
+  },
   "dependencies": {
     "defined": "^1.0.0",
     "minimist": "^1.1.1",
@@ -13,24 +15,24 @@
     "text-table": "^0.2.0",
     "timeago": "^0.2.0"
   },
-  "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "repository": {
     "type": "git",
-    "url": "git://github.com/substack/respawn-command.git"
+    "url": "git://github.com/substack/psy.git"
   },
   "keywords": [
     "respawn",
     "process",
+    "monitor",
+    "oppa",
+    "gangnam style",
+    "launch",
     "init",
     "spawn"
   ],
   "author": "substack",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/substack/respawn-command/issues"
+    "url": "https://github.com/substack/psy/issues"
   },
-  "homepage": "https://github.com/substack/respawn-command#readme"
+  "homepage": "https://github.com/substack/psy#readme"
 }

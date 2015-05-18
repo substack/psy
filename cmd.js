@@ -27,14 +27,14 @@ var mkdirp = require('mkdirp')
 var sockfile = defined(
   argv.sockfile, process.env.RESPAWN_SOCKFILE,
   path.join(
-    defined(process.env.RESPAWN_PATH, path.join(HOME, '.config/respawn')),
+    defined(process.env.RESPAWN_PATH, path.join(HOME, '.config/psy')),
     'sock'
   )
 )
 var pidfile = defined(
   argv.sockfile, process.env.RESPAWN_PIDFILE,
   path.join(
-    defined(process.env.RESPAWN_PATH, path.join(HOME, '.config/respawn')),
+    defined(process.env.RESPAWN_PATH, path.join(HOME, '.config/psy')),
     'pid'
   )
 )
@@ -93,12 +93,12 @@ if (cmd === 'start') {
     else fstart()
   })
   function fstart (err) {
-    start(function (err) {
+    start({ autoclose: false }, function (err) {
       if (err) error(err)
     })
   }
 } else if (cmd === 'daemon') {
-  daemon()
+  daemon({ autoclose: false })
 } else if (cmd === 'pid') {
   fs.readFile(pidfile, 'utf8', function (err, pid) {
     if (err) error(err)
@@ -119,7 +119,11 @@ function usage (code) {
   r.pipe(process.stdout)
 }
 
-function start (cb) {
+function start (opts, cb) {
+  if (typeof opts === 'function') {
+    cb = opts
+    opts = {}
+  }
   cb = once(cb)
   var group = respawn()
   var iface = {
@@ -175,6 +179,7 @@ function start (cb) {
       isconnected = false
       connected -= 1
 
+      if (opts.autoclose === false) return
       if (connected === 0 && group.list().length === 0) {
         setTimeout(function () {
           if (connected !== 0) return
@@ -196,13 +201,19 @@ function start (cb) {
   })
 }
 
-function daemon (cb) {
+function daemon (opts, cb) {
+  if (typeof opts === 'function') {
+    cb = opts
+    opts = {}
+  }
+  if (!opts) opts = {}
   cb = once(cb || function () {})
   var args = [
     __filename, 'server',
     '--pidfile', pidfile,
     '--sockfile', sockfile,
-    '--parentpid', process.pid
+    '--parentpid', process.pid,
+    '--autoclose', Boolean(opts.autoclose)
   ]
   var ps = spawn(process.execPath, args, {
     stdio: 'ignore',
