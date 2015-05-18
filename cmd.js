@@ -42,9 +42,15 @@ mkdirp.sync(path.dirname(sockfile))
 
 if (cmd === 'start') {
   var name = defined(argv.name, randomBytes(4).toString('hex'))
+  var opts = {
+    cwd: argv.cwd,
+    env: argv.env,
+    maxRestarts: defined(argv.maxRestarts, -1),
+    sleep: defined(argv.sleep, 0)
+  }
   getGroup(function (err, group) {
     if (err) return error(err)
-    group.start(name, argv._.slice(1), function () {
+    group.start(name, argv._.slice(1), opts, function () {
       if (!argv.name) console.log(name)
       group.disconnect()
     })
