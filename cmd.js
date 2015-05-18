@@ -368,7 +368,6 @@ function connect (cb_) {
       process.stdout.write(Buffer(buf, 'base64'))
     }
   })
-  c.pause()
  
   var r = client.wrap(METHODS)
   r.disconnect = function () { c.destroy() }
