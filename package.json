@@ -1,0 +1,34 @@
+{
+  "name": "respawn-command",
+  "version": "1.0.0",
+  "description": "respawn command for managing processes with respawn-group",
+  "main": "cmd.js",
+  "dependencies": {
+    "defined": "^1.0.0",
+    "minimist": "^1.1.1",
+    "mkdirp": "^0.5.1",
+    "once": "^1.3.2",
+    "respawn-group": "^1.0.1",
+    "rpc-stream": "^2.1.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/substack/respawn-command.git"
+  },
+  "keywords": [
+    "respawn",
+    "process",
+    "init",
+    "spawn"
+  ],
+  "author": "substack",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/substack/respawn-command/issues"
+  },
+  "homepage": "https://github.com/substack/respawn-command#readme"
+}

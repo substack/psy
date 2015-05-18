@@ -1,0 +1,10 @@
+respawn start NAME COMMAND...
+
+respawn stop NAME
+
+respawn restart NAME
+
+respawn rm NAME
+
+respawn list
+
