@@ -17,6 +17,8 @@ var once = require('once')
 var respawn = require('respawn-group')
 var spawn = require('child_process').spawn
 var randomBytes = require('crypto').randomBytes
+var timeago = require('timeago')
+var table = require('text-table')
 
 var HOME = defined(process.env.HOME, process.env.USERDIR)
 var METHODS = [ 'start', 'stop', 'restart', 'remove', 'list', 'close', 'kill' ]
@@ -43,7 +45,7 @@ if (cmd === 'start') {
   getGroup(function (err, group) {
     if (err) return error(err)
     group.start(name, argv._.slice(1), function () {
-      console.log(name)
+      if (!argv.name) console.log(name)
       group.disconnect()
     })
   })
@@ -81,7 +83,7 @@ if (cmd === 'start') {
   getGroup(function (err, group) {
     if (err) return error(err)
     group.list(function (items) {
-      console.log(items)
+      console.log(formatList(items))
       group.disconnect()
     })
   })
@@ -236,4 +238,18 @@ function connectAndDaemonize (cb) {
 function error (err) {
   console.error(err.stack || err)
   process.exit(1)
+}
+
+function formatList (items) {
+  if (argv.json) {
+    return items.map(function (item) {
+      return JSON.stringify(item)
+    }).join('\n')
+  }
+  return table(items.map(function (item) {
+    return [
+      item.id, item.status, item.pid,
+      timeago(new Date(item.started)), item.command.join(' ')
+    ]
+  }))
 }
