@@ -16,6 +16,7 @@ var rpc = require('rpc-stream')
 var once = require('once')
 var respawn = require('respawn-group')
 var spawn = require('child_process').spawn
+var randomBytes = require('crypto').randomBytes
 
 var HOME = defined(process.env.HOME, process.env.USERDIR)
 var METHODS = [ 'start', 'stop', 'restart', 'remove', 'list', 'close', 'kill' ]
@@ -38,10 +39,11 @@ var pidfile = defined(
 mkdirp.sync(path.dirname(sockfile))
 
 if (cmd === 'start') {
-  var name = defined(argv.name, argv._.shift())
+  var name = defined(argv.name, randomBytes(4).toString('hex'))
   getGroup(function (err, group) {
     if (err) return error(err)
-    group.start(name, argv._slice.slice(1), function () {
+    group.start(name, argv._.slice(1), function () {
+      console.log(name)
       group.disconnect()
     })
   })
