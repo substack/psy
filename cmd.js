@@ -40,7 +40,7 @@ var sockfile = defined(
   )
 )
 var pidfile = defined(
-  argv.sockfile, process.env.RESPAWN_PIDFILE,
+  argv.pidfile, process.env.RESPAWN_PIDFILE,
   path.join(
     defined(process.env.RESPAWN_PATH, path.join(HOME, '.config/psy')),
     'pid'
