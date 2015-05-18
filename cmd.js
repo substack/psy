@@ -93,7 +93,7 @@ if (cmd === 'start') {
     else fstart()
   })
   function fstart (err) {
-    start({ autoclose: false }, function (err) {
+    start({ autoclose: defined(argv.autoclose, false) }, function (err) {
       if (err) error(err)
     })
   }
@@ -213,8 +213,11 @@ function daemon (opts, cb) {
     '--pidfile', pidfile,
     '--sockfile', sockfile,
     '--parentpid', process.pid,
-    '--autoclose', Boolean(opts.autoclose)
+    '--autoclose', defined(argv.autoclose, 'true')
   ]
+  if (opts.autoclose !== undefined) {
+    args.push('--autoclose', String(opts.autoclose))
+  }
   var ps = spawn(process.execPath, args, {
     stdio: 'ignore',
     detached: true
