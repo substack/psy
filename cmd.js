@@ -61,10 +61,7 @@ if (cmd === 'start') {
     if (err) return error(err)
     group.stop(name, function (err) {
       if (err) return error(err)
-      group.list(function (items) {
-        if (items.length === 0) group.close()
-        group.disconnect()
-      })
+      group.disconnect()
     })
   })
 } else if (cmd === 'restart') {
@@ -79,17 +76,14 @@ if (cmd === 'start') {
   getGroup(function (err, group) {
     if (err) return error(err)
     group.remove(name, function () {
-      group.list(function (items) {
-        if (items.length === 0) group.close()
-        group.disconnect()
-      })
+      group.disconnect()
     })
   })
 } else if (cmd === 'list' || cmd === 'ls') {
   getGroup(function (err, group) {
     if (err) return error(err)
     group.list(function (items) {
-      console.log(formatList(items))
+      process.stdout.write(formatList(items))
       group.disconnect()
     })
   })
@@ -110,6 +104,13 @@ if (cmd === 'start') {
     if (err) error(err)
     else console.log(pid)
   })
+} else if (cmd === 'close') {
+  getGroup(function (err, group) {
+    if (err) return error(err)
+    group.close(function () {
+      group.disconnect()
+    })
+  })
 } else usage(1)
 
 function usage (code) {
@@ -125,9 +126,13 @@ function start (cb) {
     list: function (cb) {
       if (typeof cb === 'function') cb(group.list())
     },
-    start: function (name, command, cb) {
-      group.add(name, command)
-      group.start(name)
+    start: function (name, command, opts, cb) {
+      if (typeof opts === 'function') {
+        cb = opts
+        opts = {}
+      }
+      if (!group.get(name)) group.add(name, command)
+      group.start(name, opts)
       if (cb && typeof cb === 'function') cb()
     },
     stop: function (name, cb) {
@@ -146,14 +151,38 @@ function start (cb) {
       process.exit()
     },
     close: function (cb) {
+      group.list().forEach(function (item) {
+        group.remove(item.id)
+      })
       server.close()
       if (cb && typeof cb === 'function') cb()
     }
   }
 
+  var connected = 0
   var server = net.createServer(function (stream) {
+    connected ++
+    var isconnected = true
     stream.on('error', function () {})
     stream.pipe(rpc(iface)).pipe(stream)
+ 
+    stream.once('end', onend)
+    stream.once('error', onend)
+    stream.once('close', onend)
+ 
+    function onend () {
+      if (!isconnected) return
+      isconnected = false
+      connected -= 1
+
+      if (connected === 0 && group.list().length === 0) {
+        setTimeout(function () {
+          if (connected !== 0) return
+          if (group.list().length > 0) return
+          server.close()
+        }, 1000)
+      }
+    }
   })
   server.listen(sockfile, function () {
     cb(null, group)
@@ -254,8 +283,9 @@ function formatList (items) {
   }
   return table(items.map(function (item) {
     return [
-      item.id, item.status, item.pid,
-      timeago(new Date(item.started)), item.command.join(' ')
+      item.id, item.status, item.pid === undefined ? '---' : item.pid,
+      item.started ? timeago(new Date(item.started)) : '---',
+      item.command.join(' ')
     ]
-  }))
+  })) + (items.length ? '\n' : '')
 }
