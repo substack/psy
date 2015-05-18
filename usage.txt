@@ -4,8 +4,16 @@ psy start {OPTIONS} -- [COMMAND...]
 
    --name NAME  Give the process a name.
                 Otherwise the name is a random hex string.
+   --sleep MS   Sleep MS milliseconds between restarts.
+                Default: 1000
+   --maxRestarts N
+
+     Number of restarts allowed in 60 seconds before stopping.
+     N=-1 for Infinity. Default: -1.
 
    If NAME isn't given, the generated hex name will be printed.
+ 
+   When the process crashes, it will be restarted unless maxRestarts is reached.
 
 psy stop NAME
 
