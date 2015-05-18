@@ -97,6 +97,11 @@ if (cmd === 'start') {
   }
 } else if (cmd === 'daemon') {
   daemon()
+} else if (cmd === 'pid') {
+  fs.readFile(pidfile, 'utf8', function (err, pid) {
+    if (err) error(err)
+    else console.log(pid)
+  })
 } else usage(1)
 
 function usage (code) {
@@ -189,7 +194,7 @@ function connect (cb_) {
   })
   process.once('uncaughtException', onuncaught)
   function onuncaught (err) {
-    // needed because some core bug with unix sockets
+    // needed because some core bug with catching errors in unix sockets
     if (err && err.code === 'ECONNREFUSED') {}
     else {
       console.error(err.stack || err)
