@@ -2,23 +2,28 @@
 
 var fs = require('fs')
 var path = require('path')
+var net = require('net')
 
 var minimist = require('minimist')
 var argv = minimist(process.argv.slice(2), {
-  alias: { h: 'help', n: 'name', s: 'sockfile' }
+  alias: { h: 'help', n: 'name', s: 'sockfile', l: 'logfile' }
 })
 var cmd = argv._[0]
 if (cmd === 'help' || argv.help) return usage(0)
 
-var net = require('net')
 var defined = require('defined')
-var rpc = require('rpc-stream')
+var has = require('has')
+var xtend = require('xtend')
 var once = require('once')
-var respawn = require('respawn-group')
-var spawn = require('child_process').spawn
-var randomBytes = require('crypto').randomBytes
 var timeago = require('timeago')
 var table = require('text-table')
+var sprintf = require('sprintf')
+
+var rpc = require('rpc-stream')
+var respawn = require('respawn-group')
+
+var spawn = require('child_process').spawn
+var randomBytes = require('crypto').randomBytes
 
 var HOME = defined(process.env.HOME, process.env.USERDIR)
 var METHODS = [ 'start', 'stop', 'restart', 'remove', 'list', 'close', 'kill' ]
@@ -46,7 +51,8 @@ if (cmd === 'start') {
     cwd: argv.cwd,
     env: argv.env,
     maxRestarts: defined(argv.maxRestarts, -1),
-    sleep: defined(argv.sleep, 0)
+    sleep: defined(argv.sleep, 0),
+    logfile: argv.logfile
   }
   getGroup(function (err, group) {
     if (err) return error(err)
@@ -126,14 +132,80 @@ function start (opts, cb) {
   }
   cb = once(cb)
   var group = respawn()
+  var extra = {}
+  var logging = {}
+  var linestate = {}
+  group.on('stdout', ondata)
+  group.on('stderr', ondata)
+
+  group.on('start', onev('start'))
+  group.on('stop', onev('stop'))
+  group.on('restart', onev('restart'))
+  group.on('crash', onev('crash'))
+  group.on('sleep', onev('sleep'))
+  group.on('spawn', onev('spawn', 'PID %d', 'pid'))
+  group.on('exit', onev('exit', '%s'))
+  group.on('warn', onev('warn', '%s'))
+
+  function ondata (mon, buf) {
+    if (!has(logging, mon.id)) return
+    var outputs = logging[mon.id]
+    outputs.forEach(function (out) { out.write(buf) })
+    linestate[mon.id] = buf[buf.length-1] === 10 // \n
+  }
+
+  function onev (name, fmt) {
+    name = name.toUpperCase()
+    var props = [].slice.call(arguments, 2)
+
+    return function (mon) {
+      if (!has(logging, mon.id)) return
+      var outputs = logging[mon.id]
+      var args = [].slice.call(arguments, 1)
+      for (var i = 0; i < props.length; i++) {
+        args[i] = args[i][props[i]]
+      }
+
+      outputs.forEach(function (out) {
+        var pre = (linestate[mon.id] ? '' : '\n') + '!!! PROCESS '
+        if (fmt) {
+          var str = sprintf.apply(null, [fmt].concat(args).filter(Boolean))
+          out.write(pre + name + ': ' + str + '\n')
+        } else {
+          out.write(pre + name + '\n')
+        }
+        linestate[mon.id] = true
+      })
+    }
+  }
+
   var iface = {
     list: function (cb) {
-      if (typeof cb === 'function') cb(group.list())
+      var items = group.list().map(function (item) {
+        var ref = xtend(item, {})
+        delete ref.domain
+        delete ref.child
+        delete ref._events
+        delete ref._eventsCount
+
+        if (has(extra, item.id)) return xtend(ref, extra[item.id])
+        else return ref
+      })
+      if (typeof cb === 'function') cb(items)
     },
     start: function (name, command, opts, cb) {
       if (typeof opts === 'function') {
         cb = opts
         opts = {}
+      }
+      if (opts.logfile && !has(logging, name)) {
+        var w = fs.createWriteStream(opts.logfile, { flags: 'a' })
+        w.once('error', function (err) {
+          console.error(err.stack || err)
+        })
+        logging[name] = [ w ]
+        linestate[name] = true
+        extra[name] = { logfile: opts.logfile }
       }
       if (!group.get(name)) group.add(name, command)
       group.start(name, opts)
@@ -292,8 +364,8 @@ function error (err) {
 function formatList (items) {
   if (argv.json) {
     return items.map(function (item) {
-      return JSON.stringify(item)
-    }).join('\n')
+      return JSON.stringify(item) + '\n'
+    }).join('')
   }
   return table(items.map(function (item) {
     return [
