@@ -2,23 +2,13 @@ psy start {OPTIONS} -- [COMMAND...]
 
   Start a process COMMAND.
 
-   -n NAME, --name NAME
-
-     Give the process a name.
-     Otherwise the name is a random hex string.
-
-   --maxRestarts N
-
-     Number of restarts allowed in 60 seconds before stopping.
-     N=-1 for Infinity. Default: -1.
-
-   -l FILE, --logfile FILE
-
-     Write stdout, stderr, and process lifecycle events to FILE.
- 
-   --sleep MS
-
-     Sleep MS milliseconds between restarts. Default: 1000
+   -n, --name        Set a NAME for the process.
+   --cwd             Current working directory for COMMAND
+   --env.NAME=VALUE  Set environment variables explicitly for COMMAND.
+   --sleep           Sleep MS milliseconds between restarts. Default: 1000
+   --maxRestarts     Number of restarts allowed in 60 seconds before stopping.
+                     -1 for Infinity. Default: -1.
+   -l, --logfile     Write stdout, stderr, and process lifecycle events to FILE.
 
    If NAME isn't given, the generated hex name will be printed.
    When the process crashes, it will be restarted unless maxRestarts is reached.
@@ -63,12 +53,17 @@ If the service isn't running when a command like `psy start` or `psy ls` is run,
 the service will be opened in autoclose mode. In autoclose mode, the service
 automatically exits when there are no open connections and no managed processes.
 
-Environment Variables
+GLOBAL OPTIONS
+
+  --pidfile     File to store PID information about the daemon.
+  --sockfile    Where to place the unix socket for RPC connections
+
+  Options take precedence over environment variables.
+
+ENVIRONMENT VARIABLES
 
   PSY_SOCKFILE  Unix socket file to use for RPC connections.
-
   PSY_PIDFILE   File to store PID information about the daemon.
-
   PSY_PATH      Directory to check for `sock` and `pid` files if PSY_SOCKFILE or
                 PSY_PIDFILE are not given. Default: $HOME/.config/psy
 
