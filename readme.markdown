@@ -147,6 +147,7 @@ GLOBAL OPTIONS
 
   --pidfile     File to store PID information about the daemon.
   --sockfile    Where to place the unix socket for RPC connections
+  --version     Print the version number and exit.
 
   Options take precedence over environment variables.
 

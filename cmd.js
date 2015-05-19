@@ -48,7 +48,9 @@ var pidfile = defined(
 )
 mkdirp.sync(path.dirname(sockfile))
 
-if (cmd === 'start') {
+if (cmd === 'version' || (!cmd && argv.version)) {
+  console.log(require('./package.json').version)
+} else if (cmd === 'start') {
   var name = defined(argv.name, randomBytes(4).toString('hex'))
   var opts = {
     cwd: defined(argv.cwd, process.cwd()),
