@@ -33,16 +33,16 @@ var METHODS = [
 
 var mkdirp = require('mkdirp')
 var sockfile = defined(
-  argv.sockfile, process.env.RESPAWN_SOCKFILE,
+  argv.sockfile, process.env.PSY_SOCKFILE,
   path.join(
-    defined(process.env.RESPAWN_PATH, path.join(HOME, '.config/psy')),
+    defined(process.env.PSY_PATH, path.join(HOME, '.config/psy')),
     'sock'
   )
 )
 var pidfile = defined(
-  argv.pidfile, process.env.RESPAWN_PIDFILE,
+  argv.pidfile, process.env.PSY_PIDFILE,
   path.join(
-    defined(process.env.RESPAWN_PATH, path.join(HOME, '.config/psy')),
+    defined(process.env.PSY_PATH, path.join(HOME, '.config/psy')),
     'pid'
   )
 )
