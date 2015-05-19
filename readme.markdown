@@ -152,6 +152,16 @@ psy pid
 If the service isn't running when a command like `psy start` or `psy ls` is run,
 the service will be opened in autoclose mode. In autoclose mode, the service
 automatically exits when there are no open connections and no managed processes.
+
+Environment Variables
+
+  PSY_SOCKFILE  Unix socket file to use for RPC connections.
+
+  PSY_PIDFILE   File to store PID information about the daemon.
+
+  PSY_PATH      Directory to check for `sock` and `pid` files if PSY_SOCKFILE or
+                PSY_PIDFILE are not given. Default: $HOME/.config/psy
+
 ```
 
 # license
