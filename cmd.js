@@ -28,7 +28,8 @@ var randomBytes = require('crypto').randomBytes
 
 var HOME = defined(process.env.HOME, process.env.USERDIR)
 var METHODS = [
-  'start', 'stop', 'restart', 'remove', 'list', 'close', 'kill', 'log'
+  'start', 'stop', 'restart', 'remove', 'list', 'log',
+  'close', 'kill', 'reset'
 ]
 
 var mkdirp = require('mkdirp')
@@ -142,6 +143,15 @@ if (cmd === 'version' || (!cmd && argv.version)) {
     if (err) return error(err)
     group.close(function () {
       group.disconnect()
+    })
+  })
+} else if (cmd === 'reset') { 
+  fs.unlink(statefile, function () {
+    getGroup(function (err, group) {
+      if (err) return error(err)
+      group.reset(function () {
+        group.disconnect()
+      })
     })
   })
 } else usage(1)
@@ -274,6 +284,12 @@ function start (opts, cb) {
       })
       server.close()
       if (cb && typeof cb === 'function') cb()
+    },
+    reset: function (cb) {
+      server.close()
+      fs.unlink(pidfile)
+      fs.unlink(sockfile)
+      fs.unlink(statefile)
     }
   }
 
