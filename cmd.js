@@ -46,6 +46,14 @@ var pidfile = defined(
     'pid'
   )
 )
+var statefile = defined(
+  argv.statefile, process.env.PSY_STATEFILE,
+  path.join(
+    defined(process.env.PSY_PATH, path.join(HOME, '.config/psy')),
+    'state'
+  )
+)
+
 mkdirp.sync(path.dirname(sockfile))
 
 if (cmd === 'version' || (!cmd && argv.version)) {
@@ -173,6 +181,14 @@ function start (opts, cb) {
     linestate[mon.id] = buf[buf.length-1] === 10 // \n
   }
 
+  function checkpoint(cb) {
+    fs.writeFile(statefile, JSON.stringify(group.list().map(function (e) {
+      return { id: e.id, status: e.status, command: e.command, cwd: e.cwd, env: e.env, maxRestarts: e.maxRestarts, sleep: e.sleep, extra: extra[e.id] }
+    })), function (err) {
+      if (cb && typeof cb === 'function') cb(err)
+    })
+  }
+
   function onev (name, fmt) {
     name = name.toUpperCase()
     var props = [].slice.call(arguments, 2)
@@ -219,29 +235,24 @@ function start (opts, cb) {
         cb = opts
         opts = {}
       }
-      if (opts.logfile && !has(logging, name)) {
-        var w = fs.createWriteStream(opts.logfile, { flags: 'a' })
-        w.once('error', function (err) {
-          console.error(err.stack || err)
-        })
-        logging[name] = [ w ]
-        linestate[name] = true
-        extra[name] = { logfile: opts.logfile }
-      }
-      if (!group.get(name)) group.add(name, command, opts)
-      group.start(name, opts)
-      if (cb && typeof cb === 'function') cb()
+      startgroup(name, command, opts, function(err) {
+        if (err) return cb(err);
+        checkpoint(cb);
+      });
     },
     stop: function (name, cb) {
-      group.stop(name, cb)
+      group.stop(name, function (err) {
+        if (err) return cb(err);
+        checkpoint(cb);
+      });
     },
     restart: function (name, cb) {
       group.restart(name)
-      if (cb && typeof cb === 'function') cb()
+      checkpoint(cb);
     },
     remove: function (name, cb) {
       group.remove(name)
-      if (cb && typeof cb === 'function') cb()
+      checkpoint(cb);
     },
     kill: function () {
       server.close()
@@ -254,6 +265,39 @@ function start (opts, cb) {
       server.close()
       if (cb && typeof cb === 'function') cb()
     }
+  }
+
+  function startgroup(name, command, opts, cb) {
+    if (opts.logfile && !has(logging, name)) {
+      var w = fs.createWriteStream(opts.logfile, { flags: 'a' })
+      w.once('error', function (err) {
+        console.error(err.stack || err)
+      })
+      logging[name] = [ w ]
+      linestate[name] = true
+      extra[name] = { logfile: opts.logfile }
+    }
+    if (!group.get(name)) group.add(name, command, opts)
+    group.start(name, opts)
+    if (cb && typeof cb === 'function') cb();
+  }
+
+  function reloadstate() {
+    var state = JSON.parse(fs.readFileSync(statefile, 'utf-8'))
+    if (!Array.isArray(state)) return;
+    state.forEach(function (e) {
+      startgroup(e.id, e.command, {
+        logfile: e.logfile, 
+        maxRestarts: e.maxRestarts,
+        sleep: e.sleep,
+      });
+    });
+  }
+
+  try {
+    reloadstate();
+  } catch (e) {
+    return cb(e);
   }
 
   var connected = 0
@@ -325,6 +369,7 @@ function daemon (opts, cb) {
     '--pidfile', pidfile,
     '--sockfile', sockfile,
     '--parentpid', process.pid,
+    '--statefile', statefile,
     '--autoclose', defined(argv.autoclose, 'true')
   ]
   if (opts.autoclose !== undefined) {
