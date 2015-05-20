@@ -43,7 +43,7 @@ psy server
 
 psy daemon
 
-  Run the monitor in the background.
+  Run the monitor service in the background.
 
 psy pid
 
@@ -53,18 +53,23 @@ If the service isn't running when a command like `psy start` or `psy ls` is run,
 the service will be opened in autoclose mode. In autoclose mode, the service
 automatically exits when there are no open connections and no managed processes.
 
+If the monitor service crashes, the next time the service runs it will restart
+any processes it was running before.
+
 GLOBAL OPTIONS
 
   --pidfile     File to store PID information about the daemon.
   --sockfile    Where to place the unix socket for RPC connections
+  --statefile   Store process state information here for recovery.
   --version     Print the version number and exit.
 
   Options take precedence over environment variables.
 
 ENVIRONMENT VARIABLES
 
-  PSY_SOCKFILE  Unix socket file to use for RPC connections.
-  PSY_PIDFILE   File to store PID information about the daemon.
-  PSY_PATH      Directory to check for `sock` and `pid` files if PSY_SOCKFILE or
-                PSY_PIDFILE are not given. Default: $HOME/.config/psy
+  PSY_SOCKFILE   Unix socket file to use for RPC connections.
+  PSY_PIDFILE    File to store PID information about the daemon.
+  PSY_STATEFILE  File to store PID information about the daemon.
+  PSY_PATH       Directory to check for `sock` and `pid` files if PSY_SOCKFILE
+                 or PSY_PIDFILE are not given. Default: $HOME/.config/psy
 
