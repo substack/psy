@@ -246,23 +246,23 @@ function start (opts, cb) {
         opts = {}
       }
       startgroup(name, command, opts, function(err) {
-        if (err) return cb(err);
-        checkpoint(cb);
-      });
+        if (err) return cb(err)
+        checkpoint(cb)
+      })
     },
     stop: function (name, cb) {
       group.stop(name, function (err) {
-        if (err) return cb(err);
-        checkpoint(cb);
-      });
+        if (err) return cb(err)
+        checkpoint(cb)
+      })
     },
     restart: function (name, cb) {
       group.restart(name)
-      checkpoint(cb);
+      checkpoint(cb)
     },
     remove: function (name, cb) {
       group.remove(name)
-      checkpoint(cb);
+      checkpoint(cb)
     },
     kill: function () {
       server.close()
@@ -289,26 +289,26 @@ function start (opts, cb) {
     }
     if (!group.get(name)) group.add(name, command, opts)
     group.start(name, opts)
-    if (cb && typeof cb === 'function') cb();
+    if (cb && typeof cb === 'function') cb()
   }
 
-  function reloadstate() {
-    var state = JSON.parse(fs.readFileSync(statefile, 'utf-8'))
-    if (!Array.isArray(state)) return;
+  fs.readFile(statefile, 'utf8', function (err, src) {
+    if (err && err.code === 'ENOENT') src = '[]'
+    else if (err) return cb(err)
+
+    try { var state = JSON.parse(src) }
+    catch (err) { return cb(err) }
+
+    if (!Array.isArray(state)) return
+
     state.forEach(function (e) {
       startgroup(e.id, e.command, {
         logfile: e.logfile, 
         maxRestarts: e.maxRestarts,
         sleep: e.sleep,
-      });
-    });
-  }
-
-  try {
-    reloadstate();
-  } catch (e) {
-    return cb(e);
-  }
+      })
+    })
+  })
 
   var connected = 0
   var server = net.createServer(function (stream) {
