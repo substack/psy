@@ -49,6 +49,15 @@ psy pid
 
   Print the last known PID of the daemon process.
 
+psy reset
+
+  Clear any process state and close the server. Processes will not come back
+  when the server starts up again.
+
+psy close
+
+  Close the server. Processes will come back when the server starts up again.
+
 If the service isn't running when a command like `psy start` or `psy ls` is run,
 the service will be opened in autoclose mode. In autoclose mode, the service
 automatically exits when there are no open connections and no managed processes.
