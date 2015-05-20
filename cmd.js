@@ -182,9 +182,19 @@ function start (opts, cb) {
   }
 
   function checkpoint(cb) {
-    fs.writeFile(statefile, JSON.stringify(group.list().map(function (e) {
-      return { id: e.id, status: e.status, command: e.command, cwd: e.cwd, env: e.env, maxRestarts: e.maxRestarts, sleep: e.sleep, extra: extra[e.id] }
-    })), function (err) {
+    var src = JSON.stringify(group.list().map(function (e) {
+      return {
+        id: e.id,
+        status: e.status,
+        command: e.command,
+        cwd: e.cwd,
+        env: e.env,
+        maxRestarts: e.maxRestarts,
+        sleep: e.sleep,
+        extra: extra[e.id]
+      }
+    }))
+    fs.writeFile(statefile, src, function (err) {
       if (cb && typeof cb === 'function') cb(err)
     })
   }
