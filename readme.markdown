@@ -168,7 +168,7 @@ ENVIRONMENT VARIABLES
 
   PSY_SOCKFILE   Unix socket file to use for RPC connections.
   PSY_PIDFILE    File to store PID information about the daemon.
-  PSY_STATEFILE  File to store PID information about the daemon.
+  PSY_STATEFILE  File to store information about process state between runs.
   PSY_PATH       Directory to check for `sock` and `pid` files if PSY_SOCKFILE
                  or PSY_PIDFILE are not given. Default: $HOME/.config/psy
 
