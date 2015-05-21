@@ -319,9 +319,11 @@ function start (opts, cb) {
 
     state.forEach(function (e) {
       startgroup(e.id, e.command, {
+        cwd: e.cwd,
+        env: e.env,
         logfile: e.logfile, 
         maxRestarts: e.maxRestarts,
-        sleep: e.sleep,
+        sleep: e.sleep
       })
     })
   })
