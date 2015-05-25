@@ -422,7 +422,7 @@ function daemon (opts, cb) {
 }
 
 function connect (cb_) {
-  cb = once(function (err, r) {
+  var cb = once(function (err, r) {
     process.nextTick(function () {
       process.removeListener('uncaughtException', onuncaught)
     })
