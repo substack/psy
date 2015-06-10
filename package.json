@@ -1,6 +1,6 @@
 {
   "name": "psy",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "process monitor command",
   "bin": {
     "psy": "cmd.js"

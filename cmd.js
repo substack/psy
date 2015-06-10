@@ -26,7 +26,20 @@ var respawn = require('respawn-group')
 var spawn = require('child_process').spawn
 var randomBytes = require('crypto').randomBytes
 
-var HOME = defined(process.env.HOME, process.env.USERDIR)
+var HOME = defined(
+    process.env.HOME,
+    process.env.USERDIR
+)
+if (!HOME && process.env.USER && process.env.USER === 'root') {
+  HOME = '/root'
+}
+else if (!HOME && process.env.USER) {
+  HOME = path.join('/home', process.env.USER)
+}
+else if (!HOME) {
+  HOME = '/root'
+}
+
 var METHODS = [
   'start', 'stop', 'restart', 'remove', 'list', 'log',
   'close', 'kill', 'reset'
