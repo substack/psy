@@ -19,6 +19,7 @@ var timeago = require('timeago')
 var table = require('text-table')
 var sprintf = require('sprintf')
 var through = require('through2')
+var configDir = require('xdg-basedir').config
 
 var rpc = require('rpc-stream')
 var respawn = require('respawn-group')
@@ -26,46 +27,24 @@ var respawn = require('respawn-group')
 var spawn = require('child_process').spawn
 var randomBytes = require('crypto').randomBytes
 
-var HOME = defined(
-    process.env.HOME,
-    process.env.USERDIR
-)
-if (!HOME && process.env.USER && process.env.USER === 'root') {
-  HOME = '/root'
-}
-else if (!HOME && process.env.USER) {
-  HOME = path.join('/home', process.env.USER)
-}
-else if (!HOME) {
-  HOME = '/root'
-}
-
 var METHODS = [
   'start', 'stop', 'restart', 'remove', 'list', 'log',
   'close', 'kill', 'reset'
 ]
 
 var mkdirp = require('mkdirp')
+var psyPath = defined(process.env.PSY_PATH, path.join(configDir, 'psy'))
 var sockfile = defined(
   argv.sockfile, process.env.PSY_SOCKFILE,
-  path.join(
-    defined(process.env.PSY_PATH, path.join(HOME, '.config/psy')),
-    'sock'
-  )
+  path.join(psyPath, 'sock')
 )
 var pidfile = defined(
   argv.pidfile, process.env.PSY_PIDFILE,
-  path.join(
-    defined(process.env.PSY_PATH, path.join(HOME, '.config/psy')),
-    'pid'
-  )
+  path.join(psyPath, 'pid')
 )
 var statefile = defined(
   argv.statefile, process.env.PSY_STATEFILE,
-  path.join(
-    defined(process.env.PSY_PATH, path.join(HOME, '.config/psy')),
-    'state'
-  )
+  path.join(psyPath, 'state')
 )
 
 mkdirp.sync(path.dirname(sockfile))

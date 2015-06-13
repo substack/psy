@@ -17,6 +17,7 @@
     "text-table": "^0.2.0",
     "through2": "^0.6.5",
     "timeago": "^0.2.0",
+    "xdg-basedir": "^2.0.0",
     "xtend": "^4.0.0"
   },
   "repository": {
