@@ -13,6 +13,7 @@
     "once": "^1.3.2",
     "respawn-group": "^1.0.1",
     "rpc-stream": "^2.1.1",
+    "slice-file": "^1.0.0",
     "sprintf": "^0.1.5",
     "text-table": "^0.2.0",
     "through2": "^0.6.5",

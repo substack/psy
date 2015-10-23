@@ -6,7 +6,8 @@ var net = require('net')
 
 var minimist = require('minimist')
 var argv = minimist(process.argv.slice(2), {
-  alias: { h: 'help', n: 'name', s: 'sockfile', l: 'logfile' }
+  alias: { h: 'help', s: 'sockfile', l: 'logfile', f: 'follow' },
+  boolean: [ 'f' ]
 })
 var cmd = argv._[0]
 if (cmd === 'help' || argv.help) return usage(0)
@@ -20,6 +21,7 @@ var table = require('text-table')
 var sprintf = require('sprintf')
 var through = require('through2')
 var configDir = require('xdg-basedir').config
+var sliceFile = require('slice-file')
 
 var rpc = require('rpc-stream')
 var respawn = require('respawn-group')
@@ -52,7 +54,7 @@ mkdirp.sync(path.dirname(sockfile))
 if (cmd === 'version' || (!cmd && argv.version)) {
   console.log(require('./package.json').version)
 } else if (cmd === 'start') {
-  var name = defined(argv.name, randomBytes(4).toString('hex'))
+  var name = defined(argv.name, argv.n, randomBytes(4).toString('hex'))
   var opts = {
     cwd: defined(argv.cwd, process.cwd()),
     env: argv.env,
@@ -64,12 +66,12 @@ if (cmd === 'version' || (!cmd && argv.version)) {
     if (err) return error(err)
     group.start(name, argv._.slice(1), opts, function (err) {
       if (err) console.error(err)
-      else if (!argv.name) console.log(name)
+      else if (!argv.name && !argv.n) console.log(name)
       group.disconnect()
     })
   })
 } else if (cmd === 'stop') {
-  var name = defined(argv.name, argv._[1])
+  var name = defined(argv.name, argv.n, argv._[1])
   getGroup(function (err, group) {
     if (err) return error(err)
     group.stop(name, function (err) {
@@ -78,7 +80,7 @@ if (cmd === 'version' || (!cmd && argv.version)) {
     })
   })
 } else if (cmd === 'restart') {
-  var name = defined(argv.name, argv._[1])
+  var name = defined(argv.name, argv.n, argv._[1])
   getGroup(function (err, group) {
     if (err) return error(err)
     group.restart(name, function (err) {
@@ -87,7 +89,7 @@ if (cmd === 'version' || (!cmd && argv.version)) {
     })
   })
 } else if (cmd === 'rm' || cmd === 'remove') {
-  var name = defined(argv.name, argv._[1])
+  var name = defined(argv.name, argv.n, argv._[1])
   getGroup(function (err, group) {
     if (err) return error(err)
     group.remove(name, function (err) {
@@ -108,7 +110,11 @@ if (cmd === 'version' || (!cmd && argv.version)) {
   var name = defined(argv.name, argv._[1])
   getGroup(function (err, group) {
     if (err) return error(err)
-    group.log(name, function (err) {
+    group.log(name, {
+      n: argv.n,
+      N: argv.N,
+      follow: argv.follow
+    }, function (err) {
       if (err) console.error(err)
       //group.disconnect()
     })
@@ -163,6 +169,7 @@ function start (opts, cb) {
   var group = respawn()
   var extra = {}
   var logging = {}
+  var logfiles = {}
   var linestate = {}
   group.on('stdout', ondata)
   group.on('stderr', ondata)
@@ -287,6 +294,7 @@ function start (opts, cb) {
 
   function startgroup(name, command, opts, cb) {
     if (opts.logfile && !has(logging, name)) {
+      logfiles[name] = opts.logfile
       var w = fs.createWriteStream(opts.logfile, { flags: 'a' })
       w.once('error', function (err) {
         console.error(err.stack || err)
@@ -300,15 +308,8 @@ function start (opts, cb) {
     if (cb && typeof cb === 'function') cb()
   }
 
-  fs.readFile(statefile, 'utf8', function (err, src) {
-    if (err && err.code === 'ENOENT') src = '[]'
-    else if (err) return cb(err)
-
-    try { var state = JSON.parse(src) }
-    catch (err) { return cb(err) }
-
-    if (!Array.isArray(state)) return
-
+  readState(function (err, state) {
+    if (err) return cb(err)
     state.forEach(function (e) {
       startgroup(e.id, e.command, {
         cwd: e.cwd,
@@ -326,21 +327,55 @@ function start (opts, cb) {
     var isconnected = true
     stream.on('error', function () {})
 
-    iface.log = function (name, cb) {
+    iface.log = function (name, opts, cb) {
+      if (typeof opts === 'function') {
+        cb = opts
+        opts = {}
+      }
+      if (!opts) opts = {}
       if (!has(logging, name)) {
         logging[name] = []
         linestate[name] = true
       }
-      var log = through(function (buf, enc, next) {
+      var log = through(writec)
+      if (defined(opts.n, opts.N) !== undefined && logfiles[name]) {
+        showlines()
+      }
+      if (defined(opts.n, opts.N) === undefined || opts.follow) {
+        logging[name].push(log)
+        stream.once('_cleanup', function () {
+          var ix = logging[name].indexOf(log)
+          if (ix >= 0) logging[name].splice(ix, 1)
+        })
+      }
+
+      function writec (buf, enc, next) {
         client.write(buf.toString('base64'))
         next()
-      })
-      logging[name].push(log)
+      }
 
-      stream.once('_cleanup', function () {
-        var ix = logging[name].indexOf(log)
-        if (ix >= 0) logging[name].splice(ix, 1)
-      })
+      function showlines () {
+        log.pause()
+        var sf = sliceFile(logfiles[name])
+        var args = []
+        if (/,/.test(opts.n)) {
+          args = opts.n.split(',').map(function (s) {
+            return -Number(s)
+          })
+        } else if (opts.n !== undefined) {
+          args[0] = -opts.n
+        } else if (/,/.test(opts.N)) {
+          args = opts.N.split(',').map(Number)
+        } else {
+          args[0] = opts.N
+        }
+        sf.slice.apply(sf, args).pipe(through(writec, function () {
+          log.resume()
+          if (logging[name] && logging[name].indexOf(log) < 0) {
+            stream.end()
+          }
+        }))
+      }
     }
     var rstream = rpc(iface)
     var client = rstream.wrap(['write'])
@@ -482,4 +517,17 @@ function formatList (items) {
       item.command.join(' ')
     ]
   })) + (items.length ? '\n' : '')
+}
+
+function readState (cb) {
+  fs.readFile(statefile, 'utf8', function (err, src) {
+    if (err && err.code === 'ENOENT') src = '[]'
+    else if (err) return cb(err)
+
+    try { var state = JSON.parse(src) }
+    catch (err) { return cb(err) }
+
+    if (!Array.isArray(state)) cb(null, [])
+    else cb(null, state)
+  })
 }
