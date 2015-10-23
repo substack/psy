@@ -64,12 +64,31 @@ if (cmd === 'version' || (!cmd && argv.version)) {
   }
   getGroup(function (err, group) {
     if (err) return error(err)
+    group.list(function (err, gs) {
+      if (err) return error(err)
+      for (var i = 0; i < gs.length; i++) {
+        if (gs[i].id !== name) continue
+        if (gs[i].status === 'running') {
+          return error('A process called ' + JSON.stringify(name)
+            + ' is already running.')
+        } else {
+          group.remove(name, function (err) {
+            if (err) console.error(err)
+            cstart(group)
+          })
+        }
+        return
+      }
+      cstart(group)
+    })
+  })
+  function cstart (group) {
     group.start(name, argv._.slice(1), opts, function (err) {
       if (err) console.error(err)
       else if (!argv.name && !argv.n) console.log(name)
       group.disconnect()
     })
-  })
+  }
 } else if (cmd === 'stop') {
   var name = defined(argv.name, argv.n, argv._[1])
   getGroup(function (err, group) {
