@@ -127,6 +127,12 @@ psy log NAME
 
   Show the lifecycle events and stdout+stderr for NAME as it arrives.
 
+  -n I, -n I,J  Show lines I through J starting from the end of the log.
+  -N I, -N I,J  Show lines I through J starting from the start of the log.
+  -f, --follow  Show live data from running processes.
+
+  By default, --follow is enabled when no -n or -N is given.
+
 psy server
 
   Run the monitor service in the foreground.
