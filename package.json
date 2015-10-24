@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "defined": "^1.0.0",
+    "end-of-stream": "^1.1.0",
     "has": "^1.0.0",
     "minimist": "^1.1.1",
     "mkdirp": "^0.5.1",
@@ -20,6 +21,9 @@
     "timeago": "^0.2.0",
     "xdg-basedir": "^2.0.0",
     "xtend": "^4.0.0"
+  },
+  "scripts": {
+    "test": "tape test/*.js"
   },
   "repository": {
     "type": "git",
@@ -40,5 +44,8 @@
   "bugs": {
     "url": "https://github.com/substack/psy/issues"
   },
-  "homepage": "https://github.com/substack/psy#readme"
+  "homepage": "https://github.com/substack/psy#readme",
+  "devDependencies": {
+    "tape": "^4.2.2"
+  }
 }
