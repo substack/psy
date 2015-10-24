@@ -57,8 +57,10 @@ var opts = {
     '--statefile', statefile
   ]
 }
+opts._ = ['x'].concat(opts.args)
 
 if (cmd === 'server') {
+  opts._.push('--autoclose', 'true')
   var server = createServer(require('./server.js'), opts)
   server.once('error', function (err) {
     if (err && err.code === 'EADDRINUSE') {

@@ -17,10 +17,11 @@ var connected = 0
 var psy = null
 
 module.exports = function (server, stream, args) {
-  if (!psy) psy = new Psy(minimist(args))
+  var argv = minimist(args)
+  if (!psy) psy = new Psy(argv)
   psy.on('error', function (err) { stream.emit('error', err) })
   connected++
-  onend(stream, function () {
+  if (!argv.autoclose) onend(stream, function () {
     if (--connected === 0 && psy.group.list().length === 0) {
       setTimeout(function () {
         if (connected !== 0) return
