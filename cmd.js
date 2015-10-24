@@ -44,6 +44,8 @@ if (cmd === 'version' || (!cmd && argv.version)) {
 }
 
 var autod = require('auto-daemon')
+var createServer = require('auto-daemon/server')
+
 var opts = {
   rpcfile: path.join(__dirname, 'server.js'),
   sockfile: sockfile,
@@ -55,6 +57,29 @@ var opts = {
     '--statefile', statefile
   ]
 }
+
+if (cmd === 'server') {
+  var server = createServer(require('./server.js'), opts)
+  server.once('error', function (err) {
+    if (err && err.code === 'EADDRINUSE') {
+      fs.readFile(pidfile, function (err, src) {
+        if (err) return retry()
+        try { process.kill(Number(src), 0) }
+        catch (err) { return retry() }
+        error('an instance of psy is already running on ' + sockfile)
+      })
+    } else error(err)
+
+    function retry () {
+      fs.unlink(sockfile, function (err) {
+        server.listen(sockfile)
+      })
+    }
+  })
+  server.listen(sockfile)
+  return
+}
+
 autod(opts, function (err, r, c) {
   if (cmd === 'start') {
     var name = defined(argv.name, argv.n, randomBytes(4).toString('hex'))
@@ -107,10 +132,8 @@ autod(opts, function (err, r, c) {
       c.end()
     })
     stream.pipe(process.stdout)
-  } else if (cmd === 'server') {
-    // todo
   } else if (cmd === 'daemon') {
-    // todo
+    c.end()
   } else if (cmd === 'pid') {
     fs.readFile(pidfile, 'utf8', function (err, pid) {
       if (err) error(err)
