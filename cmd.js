@@ -60,10 +60,9 @@ var opts = {
     '--autoclose'
   ]
 }
-opts._ = ['x'].concat(opts.args)
 
 if (cmd === 'server') {
-  opts._.splice(-1,1, '--no-autoclose')
+  opts.args.splice(-1,1, '--no-autoclose')
   opts.autoclose = false
   var server = listen(require('./server.js'), opts)
   server.once('listening', function () {

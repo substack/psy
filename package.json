@@ -6,7 +6,7 @@
     "psy": "cmd.js"
   },
   "dependencies": {
-    "auto-daemon": "^2.1.0",
+    "auto-daemon": "^2.1.1",
     "defined": "^1.0.0",
     "end-of-stream": "^1.1.0",
     "has": "^1.0.0",
