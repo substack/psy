@@ -78,12 +78,19 @@ if (cmd === 'server') {
       })
     }
   })
+  server.once('listening', function () {
+    autod(opts, function (err, r, c) {
+      if (err) error(err)
+      else c.end()
+    })
+  })
   server.listen(sockfile)
   return
 }
 
 autod(opts, function (err, r, c) {
-  if (cmd === 'start') {
+  if (err) error(err)
+  else if (cmd === 'start') {
     var name = defined(argv.name, argv.n, randomBytes(4).toString('hex'))
     var opts = {
       cwd: defined(argv.cwd, process.cwd()),
@@ -130,16 +137,20 @@ autod(opts, function (err, r, c) {
       N: argv.N,
       follow: argv.follow
     })
-    stream.on('end', function () {
-      c.end()
-    })
+    stream.on('end', function () { c.end() })
     stream.pipe(process.stdout)
   } else if (cmd === 'daemon') {
     c.end()
   } else if (cmd === 'pid') {
     fs.readFile(pidfile, 'utf8', function (err, pid) {
-      if (err) error(err)
-      else console.log(pid)
+      if (err) return error(err)
+      try { process.kill(Number(pid), 0) }
+      catch (err) {
+        console.log(0)
+        return c.end()
+      }
+      console.log(pid)
+      c.end()
     })
   } else if (cmd === 'close') {
     r.close(function () {

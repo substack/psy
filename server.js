@@ -104,6 +104,12 @@ function Psy (opts) {
       })
     })
   })
+
+  fs.readFile(self.pidfile, function (err, src) {
+    if (err || Number(src) !== process.pid) {
+      fs.writeFile(self.pidfile, String(process.pid))
+    }
+  })
 }
 
 Psy.prototype._onev = function (name, fmt) {
@@ -238,7 +244,6 @@ Psy.prototype.remove = function (name, cb) {
 }
 
 Psy.prototype.log = function (name, opts) {
-console.log('LOG', name, self.extra)
   var self = this
   if (!opts) opts = {}
   if (!has(self.logging, name)) {
