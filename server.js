@@ -95,6 +95,7 @@ function Psy (opts) {
   self._readState(function (err, state) {
     if (err) return self.emit('error', err)
     state.forEach(function (e) {
+      self.extra[e.id] = e.extra
       self.start(e.id, e.command, {
         cwd: e.cwd,
         env: e.env,
@@ -150,7 +151,7 @@ Psy.prototype._checkpoint = function (cb) {
       env: e.env,
       maxRestarts: e.maxRestarts,
       sleep: e.sleep,
-      extra: self.extra[e.id]
+      extra: xtend(e.extra, self.extra[e.id])
     }
   }))
   fs.writeFile(self.statefile, src, cb)
@@ -211,7 +212,7 @@ Psy.prototype.start = function (name, command, opts, cb) {
   }
 
   function cstart (cb) {
-    self.extra[name] = {}
+    if (!self.extra[name]) self.extra[name] = {}
     if (opts.logfile && !has(self.logging, name)) {
       var w = fs.createWriteStream(opts.logfile, { flags: 'a' })
       w.once('error', cb)
@@ -251,21 +252,23 @@ Psy.prototype.log = function (name, opts) {
     self.linestate[name] = true
   }
   var stream = through()
+  var live = through()
   if (defined(opts.n, opts.N) !== undefined) {
     if (self.extra[name] && self.extra[name].logfile) showlines()
     else if (!opts.follow) stream.end()
   }
   if (defined(opts.n, opts.N) === undefined || opts.follow) {
-    self.logging[name].push(stream)
+    self.logging[name].push(live)
     onend(stream, function () {
-      var ix = self.logging[name].indexOf(stream)
+      var ix = self.logging[name].indexOf(live)
       if (ix >= 0) self.logging[name].splice(ix, 1)
     })
+    live.pipe(stream)
   }
   return stream
 
   function showlines () {
-    stream.pause()
+    live.pause()
     var sf = sliceFile(self.extra[name].logfile)
     var args = []
     if (/,/.test(opts.n)) {
@@ -279,12 +282,13 @@ Psy.prototype.log = function (name, opts) {
     } else {
       args[0] = opts.N
     }
-    sf.slice.apply(sf, args).pipe(through(writec, function () {
-      stream.resume()
-      if (self.logging[name].indexOf(stream) < 0) {
+    var s = sf.slice.apply(sf, args)
+    s.on('end', function () {
+      if (self.logging[name].indexOf(live) < 0) {
         stream.end()
-      }
-    }))
+      } else live.resume()
+    })
+    s.pipe(stream, { end: false })
   }
 }
 
