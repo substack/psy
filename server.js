@@ -19,10 +19,13 @@ var psy = null
 module.exports = function (server, stream, args) {
   var argv = minimist(args)
   if (!psy) psy = new Psy(argv)
-  psy.on('error', function (err) { stream.emit('error', err) })
+  psy.on('error', onerror)
   connected++
-  if (!argv.autoclose) onend(stream, function () {
-    if (--connected === 0 && psy.group.list().length === 0) {
+  onend(stream, function () {
+    psy.removeListener('error', onerror)
+    connected--
+    if (!argv.autoclose) return
+    if (connected === 0 && psy.group.list().length === 0) {
       setTimeout(function () {
         if (connected !== 0) return
         if (psy.group.list().length > 0) return
@@ -30,6 +33,8 @@ module.exports = function (server, stream, args) {
       }, 1000)
     }
   })
+  function onerror (err) { stream.emit('error', err) }
+
   return {
     start: psy.start.bind(psy),
     stop: psy.stop.bind(psy),
