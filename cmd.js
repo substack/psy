@@ -44,11 +44,12 @@ if (cmd === 'version' || (!cmd && argv.version)) {
 }
 
 var autod = require('auto-daemon')
-var createServer = require('auto-daemon/server')
+var listen = require('auto-daemon/listen')
 
 var opts = {
   rpcfile: path.join(__dirname, 'server.js'),
   sockfile: sockfile,
+  pidfile: pidfile,
   methods: METHODS,
   debug: argv.debug,
   args: [
@@ -60,31 +61,14 @@ var opts = {
 opts._ = ['x'].concat(opts.args)
 
 if (cmd === 'server') {
-  opts._.push('--autoclose', 'true')
-  var server = createServer(require('./server.js'), opts)
-  server.once('error', function (err) {
-    if (err && err.code === 'EADDRINUSE') {
-      fs.readFile(pidfile, function (err, src) {
-        if (err) return retry()
-        try { process.kill(Number(src), 0) }
-        catch (err) { return retry() }
-        error('an instance of psy is already running on ' + sockfile)
-      })
-    } else error(err)
-
-    function retry () {
-      fs.unlink(sockfile, function (err) {
-        server.listen(sockfile)
-      })
-    }
-  })
+  opts._.push('--autoclose', false)
+  var server = listen(require('./server.js'), opts)
   server.once('listening', function () {
     autod(opts, function (err, r, c) {
       if (err) error(err)
       else c.end()
     })
   })
-  server.listen(sockfile)
   return
 }
 
