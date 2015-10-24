@@ -52,16 +52,19 @@ var opts = {
   pidfile: pidfile,
   methods: METHODS,
   debug: argv.debug,
+  autoclose: true,
   args: [
     '--sockfile', sockfile,
     '--pidfile', pidfile,
-    '--statefile', statefile
+    '--statefile', statefile,
+    '--autoclose'
   ]
 }
 opts._ = ['x'].concat(opts.args)
 
 if (cmd === 'server') {
-  opts._.push('--autoclose', false)
+  opts._.splice(-1,1, '--no-autoclose')
+  opts.autoclose = false
   var server = listen(require('./server.js'), opts)
   server.once('listening', function () {
     autod(opts, function (err, r, c) {
