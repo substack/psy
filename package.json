@@ -5,6 +5,7 @@
   "bin": {
     "psy": "cmd.js"
   },
+  "main": "index.js",
   "dependencies": {
     "auto-daemon": "^2.1.1",
     "defined": "^1.0.0",
