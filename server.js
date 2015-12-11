@@ -104,7 +104,7 @@ function Psy (opts) {
       self.start(e.id, e.command, {
         cwd: e.cwd,
         env: e.env,
-        logfile: e.logfile, 
+        logfile: e.logfile,
         maxRestarts: e.maxRestarts,
         sleep: e.sleep
       })

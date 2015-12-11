@@ -180,6 +180,69 @@ ENVIRONMENT VARIABLES
 
 ```
 
+# javascript api
+
+The JavaScript API will respect the same environment variables as the cli. You can provide overrides in the `opts` objects, however. See `cmd.js` for an example.
+
+### ```psy(opts)```
+
+Constructor.
+```js
+var psy = require('psy')(opts)
+```
+
+opts:
+
+* `psypath`: PSY_PATH
+* `statefile`: PSY_STATEFILE
+* `sockfile`: PSY_SOCKFILE
+* `pidfile`: PSY_PIDFILE
+* `rpcfile`: path to rpc server
+* `debug`: boolean to debug.
+
+### ```psy.server(cb)```
+
+Starts a psy server, does not close it.
+
+```js
+psy.server(argv, function (err, r, c) {
+  if (err) error(err)
+  else c.end()
+})
+```
+
+### ```psy.restart(name, cb)```
+```js
+psy.restart(name, function (err) {
+  if (err) throw err
+})
+```
+### ```psy.stop(name, cb)```
+
+### ```psy.remove(name, cb)```
+
+### ```psy.log(name, cb)```
+returns callback with cb(err, stream)
+
+### ```psy.kill(cb)```
+
+### ```psy.close(cb)```
+
+### ```psy.list(cb)```
+return callback with cb(err, items)
+
+### ```psy.run(cb)```
+
+Run a daemon.
+
+`cb`: runs autod under the hood and returns the same callback.
+
+### Example
+
+Used in:
+* [monu](http://github.com/maxogden/monu)
+* [dat](http://github.com/karissa/dat-app)
+
 # license
 
 MIT

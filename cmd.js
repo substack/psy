@@ -17,141 +17,88 @@ var table = require('text-table')
 var configDir = require('xdg-basedir').config
 var randomBytes = require('crypto').randomBytes
 
-var METHODS = [
-  'start', 'stop', 'restart', 'remove', 'list', 'log:s',
-  'close', 'kill', 'reset'
-]
-
-var mkdirp = require('mkdirp')
-var psyPath = defined(process.env.PSY_PATH, path.join(configDir, 'psy'))
-var sockfile = defined(
-  argv.sockfile, process.env.PSY_SOCKFILE,
-  path.join(psyPath, 'sock')
-)
-var pidfile = defined(
-  argv.pidfile, process.env.PSY_PIDFILE,
-  path.join(psyPath, 'pid')
-)
-var statefile = defined(
-  argv.statefile, process.env.PSY_STATEFILE,
-  path.join(psyPath, 'state')
-)
-
-mkdirp.sync(path.dirname(sockfile))
-
 if (cmd === 'version' || (!cmd && argv.version)) {
   return console.log(require('./package.json').version)
 }
 
-var autod = require('auto-daemon')
-var listen = require('auto-daemon/listen')
-
-var opts = {
-  rpcfile: path.join(__dirname, 'server.js'),
-  sockfile: sockfile,
-  pidfile: pidfile,
-  methods: METHODS,
-  debug: argv.debug,
-  autoclose: true,
-  args: [
-    '--sockfile', sockfile,
-    '--pidfile', pidfile,
-    '--statefile', statefile,
-    '--autoclose'
-  ]
-}
+var psy = require('./index.js')(argv)
 
 if (cmd === 'server') {
-  opts.args.splice(-1,1, '--no-autoclose')
-  opts.autoclose = false
-  var server = listen(require('./server.js'), opts)
-  server.once('listening', function () {
-    autod(opts, function (err, r, c) {
-      if (err) error(err)
-      else c.end()
-    })
+  psy.server(function (err) {
+    if (err) error(err)
+    else c.end()
   })
   return
 }
 
-autod(opts, function (err, r, c) {
-  if (err) error(err)
-  else if (cmd === 'start') {
-    var name = defined(argv.name, argv.n, randomBytes(4).toString('hex'))
-    var opts = {
-      cwd: defined(argv.cwd, process.cwd()),
-      env: argv.env,
-      maxRestarts: defined(argv.maxRestarts, -1),
-      sleep: defined(argv.sleep, 0),
-      logfile: argv.logfile
-    }
-    r.start(name, argv._.slice(1), opts, function (err) {
-      if (err && err.info) error(err.info)
-      else if (err) error(err)
-      else if (!argv.name && !argv.n) console.log(name)
-      c.end()
-      process.exit()
-    })
-  } else if (cmd === 'stop') {
-    var name = defined(argv.name, argv.n, argv._[1])
-    r.stop(name, function (err) {
-      if (err) error(err)
-      c.end()
-    })
-  } else if (cmd === 'restart') {
-    var name = defined(argv.name, argv.n, argv._[1])
-    r.restart(name, function (err) {
-      if (err) return error(err)
-      c.end()
-    })
-  } else if (cmd === 'rm' || cmd === 'remove') {
-    var name = defined(argv.name, argv.n, argv._[1])
-    r.remove(name, function (err) {
-      if (err) return error(err)
-      c.end()
-    })
-  } else if (cmd === 'list' || cmd === 'ls') {
-    r.list(function (err, items) {
-      if (err) console.error(err)
-      else process.stdout.write(formatList(items))
-      c.end()
-    })
-  } else if (cmd === 'log') {
-    var name = defined(argv.name, argv._[1])
-    var stream = r.log(name, {
-      n: argv.n,
-      N: argv.N,
-      follow: argv.follow
-    })
-    stream.on('end', function () { c.end() })
+if (cmd === 'start') {
+  var name = defined(argv.name, argv.n, randomBytes(4).toString('hex'))
+  var opts = {
+    cwd: defined(argv.cwd, process.cwd()),
+    env: argv.env,
+    maxRestarts: defined(argv.maxRestarts, -1),
+    sleep: defined(argv.sleep, 0),
+    logfile: argv.logfile,
+    name: name
+  }
+  psy.start(argv._.slice(1), opts, function (err) {
+    if (err && err.info) error(err.info)
+    else if (err) error(err)
+    else if (!argv.name && !argv.n) console.log(name)
+    process.exit()
+  })
+} else if (cmd === 'stop') {
+  var name = defined(argv.name, argv.n, argv._[1])
+  psy.stop(name, function (err) {
+    if (err) error(err)
+  })
+} else if (cmd === 'restart') {
+  var name = defined(argv.name, argv.n, argv._[1])
+  psy.restart(name, function (err) {
+    if (err) error(err)
+  })
+} else if (cmd === 'rm' || cmd === 'remove') {
+  var name = defined(argv.name, argv.n, argv._[1])
+  psy.remove(name, function (err) {
+    if (err) error(err)
+  })
+} else if (cmd === 'list' || cmd === 'ls') {
+  psy.list(function (err, items) {
+    if (err) console.error(err)
+    else process.stdout.write(formatList(items))
+  })
+} else if (cmd === 'log') {
+  var name = defined(argv.name, argv._[1])
+  psy.log(name, {
+    n: argv.n,
+    N: argv.N,
+    follow: argv.follow
+  }, function (err, stream) {
+    if (err) return error(err)
     stream.pipe(process.stdout)
-  } else if (cmd === 'daemon') {
-    c.end()
-  } else if (cmd === 'pid') {
-    fs.readFile(pidfile, 'utf8', function (err, pid) {
-      if (err) return error(err)
-      try { process.kill(Number(pid), 0) }
-      catch (err) {
-        console.log(0)
-        return c.end()
-      }
-      console.log(pid)
-      c.end()
-    })
-  } else if (cmd === 'close') {
-    r.close(function () {
-      c.end()
-    })
-  } else if (cmd === 'kill') {
-    r.kill(function () { c.end() })
-  } else if (cmd === 'reset') { 
-    fs.unlink(statefile, function () {
-      r.reset(function () {
-        c.end()
-      })
-    })
-  } else usage(1)
-})
+  })
+} else if (cmd === 'daemon') {
+  psy.run(function (err) {
+    if (err) error(err)
+  })
+} else if (cmd === 'pid') {
+  psy.pid(function (err, pid) {
+    if (err) return error(err)
+    console.log(pid)
+  })
+} else if (cmd === 'close') {
+  psy.close(function (err) {
+    if (err) error(err)
+  })
+} else if (cmd === 'kill') {
+  psy.kill(function (err) {
+    if (err) error(err)
+   })
+} else if (cmd === 'reset') {
+  psy.reset(function (err) {
+    if (err) error(err)
+  })
+} else usage(1)
 
 function usage (code) {
   var r = fs.createReadStream(path.join(__dirname, 'usage.txt'))
