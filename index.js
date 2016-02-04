@@ -4,6 +4,7 @@ var randomBytes = require('crypto').randomBytes
 var path = require('path')
 var configDir = require('xdg-basedir').config
 var mkdirp = require('mkdirp')
+var xtend = require('xtend')
 
 var autod = require('auto-daemon')
 var listen = require('auto-daemon/listen')
@@ -23,7 +24,7 @@ function Psy (args) {
 Psy.prototype.run = function (cb) {
   this.opts.autoclose = true
   this.opts.args.splice(-1, 1, '--autoclose')
-  autod(this.opts, cb)
+  autod(xtend(this.opts, { autoclose: false }), cb)
 }
 
 Psy.prototype.server = function (cb) {
