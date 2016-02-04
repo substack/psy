@@ -26,7 +26,6 @@ var psy = require('./index.js')(argv)
 if (cmd === 'server') {
   psy.server(function (err) {
     if (err) error(err)
-    else c.end()
   })
   return
 }
