@@ -81,8 +81,11 @@ test('long lived process pid is stable', function (t) {
 })
 
 test('rm time2', function (t) {
-  t.plan(1)
-  run('psy rm time2', function (err) {
+  t.plan(2)
+  run('psy reset time2', function (err) {
     t.ifError(err)
+    run('psy rm time2', function (err) {
+      t.ifError(err)
+    })
   })
 })

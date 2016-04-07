@@ -144,6 +144,7 @@ var defaults = function (args) {
 
   var opts = {
     rpcfile: rpcfile,
+    statefile: statefile,
     sockfile: sockfile,
     pidfile: pidfile,
     methods: METHODS,
