@@ -83,6 +83,12 @@ TypeError: Cannot read property 'whatever' of undefined
 !!! PROCESS STOP
 ```
 
+restart a process on reboot, add the following to your crontab:
+
+```
+@reboot psy daemon
+```
+
 and SEVERAL more!
 
 # usage
