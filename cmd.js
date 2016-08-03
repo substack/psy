@@ -52,10 +52,21 @@ if (cmd === 'start') {
     if (err) error(err)
   })
 } else if (cmd === 'restart') {
-  var name = defined(argv.name, argv.n, argv._[1])
-  psy.restart(name, function (err) {
-    if (err) error(err)
-  })
+  if (argv.all) {
+    psy.list(function(err, items) {
+      if (err) error(err)
+      else items.forEach(function (item) {
+        psy.restart(item.id, function (err) {
+          if (err) error(err)
+        })
+      })
+    })
+  } else {
+    var name = defined(argv.name, argv.n, argv._[1])
+    psy.restart(name, function (err) {
+      if (err) error(err)
+    })
+  }
 } else if (cmd === 'rm' || cmd === 'remove') {
   var name = defined(argv.name, argv.n, argv._[1])
   psy.remove(name, function (err) {
