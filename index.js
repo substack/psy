@@ -18,6 +18,7 @@ module.exports = Psy
 
 function Psy (args) {
   if (!(this instanceof Psy)) return new Psy(args)
+  args = args || {}
   this.opts = defaults(args)
 }
 
