@@ -6,7 +6,7 @@ var path = require('path')
 var minimist = require('minimist')
 var argv = minimist(process.argv.slice(2), {
   alias: { h: 'help', s: 'sockfile', l: 'logfile', f: 'follow' },
-  boolean: [ 'f', 'debug' ]
+  boolean: [ 'f', 'debug', 'all' ]
 })
 var cmd = argv._[0]
 if (cmd === 'help' || argv.help) return usage(0)
