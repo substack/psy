@@ -12,7 +12,7 @@ var cmd = argv._[0]
 if (cmd === 'help' || argv.help) return usage(0)
 
 var defined = require('defined')
-var timeago = require('timeago')
+var timeago = require('timeago.js')()
 var table = require('text-table')
 var configDir = require('xdg-basedir').config
 var randomBytes = require('crypto').randomBytes
@@ -114,7 +114,7 @@ function formatList (items) {
   return table(items.map(function (item) {
     return [
       item.id, item.status, item.pid === undefined ? '---' : item.pid,
-      item.started ? timeago(new Date(item.started)) : '---',
+      item.started ? timeago.format(new Date(item.started)) : '---',
       item.command.join(' ')
     ]
   })) + (items.length ? '\n' : '')

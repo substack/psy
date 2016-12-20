@@ -21,7 +21,7 @@
     "sprintf": "^0.1.5",
     "text-table": "^0.2.0",
     "through2": "^0.6.5",
-    "timeago": "^0.2.0",
+    "timeago.js": "^1.0.9",
     "xdg-basedir": "^2.0.0",
     "xtend": "^4.0.1"
   },
