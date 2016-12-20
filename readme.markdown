@@ -111,6 +111,8 @@ psy restart NAME
 
   Restart a process by its NAME.
 
+  --all      Restart all processes
+
 psy rm NAME
 psy remove NAME
 
